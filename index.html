@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>تحليل أبعاد الجسم</title>
+  <style>
+    body {
+      background-color: black;
+      color: white;
+      text-align: center;
+      font-family: sans-serif;
+    }
+    canvas {
+      margin-top: 20px;
+      border: 1px solid white;
+    }
+  </style>
+</head>
+<body>
+  <h2>تحليل أبعاد الجسم (من صورة)</h2>
+  <input type="file" accept="image/*" id="upload">
+  <canvas id="canvas"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/pose.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.min.js"></script>
+
+  <script>
+    const upload = document.getElementById('upload');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const pose = new Pose.Pose({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/${file}`
+    });
+
+    pose.setOptions({
+      modelComplexity: 1,
+      smoothLandmarks: true,
+      enableSegmentation: false,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    });
+
+    pose.onResults((results) => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+      if (results.poseLandmarks) {
+        drawConnectors(ctx, results.poseLandmarks, Pose.POSE_CONNECTIONS, { color: 'aqua', lineWidth: 2 });
+        drawLandmarks(ctx, results.poseLandmarks, { color: 'red', lineWidth: 1 });
+      }
+    });
+
+    upload.addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      const img = new Image();
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        img.src = reader.result;
+      };
+
+      img.onload = async () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        await pose.send({ image: img });
+      };
+
+      reader.readAsDataURL(file);
+    });
+  </script>
+</body>
+</html>
